@@ -5,19 +5,16 @@ x-customizable-image: &customizable_image
   pull_policy: always
   restart: unless-stopped
 
-x-depends-on-configurator: &depends_on_configurator
-  depends_on:
-    configurator:
-      condition: service_completed_successfully
-
 x-backend-defaults: &backend_defaults
-  <<: [*depends_on_configurator, *customizable_image]
+  <<: *customizable_image
   volumes:
     - sites:/home/frappe/frappe-bench/sites
+  depends_on:
+    - configurator
 
 services:
   configurator:
-    <<: *backend_defaults
+    <<: *customizable_image
     platform: linux/amd64
     entrypoint:
       - bash
@@ -64,13 +61,15 @@ services:
       - websocket
 
   websocket:
-    <<: [*depends_on_configurator, *customizable_image]
+    <<: *customizable_image
     platform: linux/amd64
     command:
       - node
       - /home/frappe/frappe-bench/apps/frappe/socketio.js
     volumes:
       - sites:/home/frappe/frappe-bench/sites
+    depends_on:
+      - configurator
 
   queue-short:
     <<: *backend_defaults
